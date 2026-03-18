@@ -1,21 +1,46 @@
 // AI-GENERATED
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { SessionsRepository } from './sessions.repository';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { Session } from './session.entity';
 
 @Injectable()
 export class SessionsService {
   constructor(private readonly sessionsRepository: SessionsRepository) {}
 
-  // TODO: implement findAllByUser(userId: string): Promise<Session[]>
-  //   — delegates to sessionsRepository.findAllByUserId
+  findAllByUser(userId: string): Promise<Session[]> {
+    return this.sessionsRepository.findAllByUserId(userId);
+  }
 
-  // TODO: implement create(userId: string, dto: CreateSessionDto): Promise<Session>
-  //   — validate scheduledAt is in the future (throw BadRequestException if not)
-  //   — delegates to sessionsRepository.create
+  create(userId: string, dto: CreateSessionDto): Promise<Session> {
+    if (new Date(dto.scheduledAt) <= new Date()) {
+      throw new BadRequestException('scheduledAt must be in the future');
+    }
 
-  // TODO: implement remove(id: string, userId: string): Promise<void>
-  //   — find session by id (throw NotFoundException if not found)
-  //   — verify session.userId === userId (throw ForbiddenException if not)
-  //   — delegates to sessionsRepository.remove
+    return this.sessionsRepository.create({
+      userId,
+      examName: dto.examName,
+      scheduledAt: new Date(dto.scheduledAt),
+      durationMinutes: dto.durationMinutes,
+    });
+  }
+
+  async remove(id: string, userId: string): Promise<void> {
+    const session = await this.sessionsRepository.findOneById(id);
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    if (session.userId !== userId) {
+      throw new ForbiddenException('Session belongs to another user');
+    }
+
+    await this.sessionsRepository.remove(session);
+  }
 }

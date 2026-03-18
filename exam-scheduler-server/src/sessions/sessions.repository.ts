@@ -11,12 +11,23 @@ export class SessionsRepository {
     private readonly repo: Repository<Session>,
   ) {}
 
-  // TODO: implement findAllByUserId(userId: string): Promise<Session[]>
-  //   — order by scheduledAt ASC
+  findAllByUserId(userId: string): Promise<Session[]> {
+    return this.repo.find({
+      where: { userId },
+      order: { scheduledAt: 'ASC' },
+    });
+  }
 
-  // TODO: implement findOneById(id: string): Promise<Session | null>
+  findOneById(id: string): Promise<Session | null> {
+    return this.repo.findOneBy({ id });
+  }
 
-  // TODO: implement create(data: Partial<Session>): Promise<Session>
+  async create(data: Partial<Session>): Promise<Session> {
+    const session = this.repo.create(data);
+    return this.repo.save(session);
+  }
 
-  // TODO: implement remove(session: Session): Promise<void>
+  async remove(session: Session): Promise<void> {
+    await this.repo.remove(session);
+  }
 }

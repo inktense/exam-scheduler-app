@@ -16,37 +16,29 @@ import { User } from '../users/user.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { SessionResponseDto } from './dto/session-response.dto';
 
+
 @Controller('sessions')
 @UseGuards(BasicAuthGuard)
 export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
 
-  // TODO: implement GET /api/sessions
-  //   — returns all sessions for the authenticated user
   @Get()
-  findAll(@CurrentUser() _user: User): Promise<SessionResponseDto[]> {
-    throw new Error('Not implemented yet');
+  findAll(@CurrentUser() user: User): Promise<SessionResponseDto[]> {
+    return this.sessionsService.findAllByUser(user.id);
   }
 
-  // TODO: implement POST /api/sessions
-  //   — creates a session for the authenticated user, returns 201
   @Post()
+  @HttpCode(201)
   create(
-    @CurrentUser() _user: User,
-    @Body() _dto: CreateSessionDto,
+    @CurrentUser() user: User,
+    @Body() dto: CreateSessionDto,
   ): Promise<SessionResponseDto> {
-    throw new Error('Not implemented yet');
+    return this.sessionsService.create(user.id, dto);
   }
 
-  // TODO: implement DELETE /api/sessions/:id
-  //   — deletes session, returns 204 No Content
-  //   — 404 if not found, 403 if belongs to another user
   @Delete(':id')
   @HttpCode(204)
-  remove(
-    @CurrentUser() _user: User,
-    @Param('id') _id: string,
-  ): Promise<void> {
-    throw new Error('Not implemented yet');
+  remove(@CurrentUser() user: User, @Param('id') id: string): Promise<void> {
+    return this.sessionsService.remove(id, user.id);
   }
 }
