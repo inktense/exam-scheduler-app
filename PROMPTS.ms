@@ -408,3 +408,21 @@ Then implement it.
   └──────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────┘ 
 
   ------
+
+  Now implement the project support files described in CLAUDE.md.
+
+create or update:
+- README.md
+- docker-compose.yml
+- .env.example
+- optionally AI_USAGE.md if it helps keep prompt history clean
+
+The README should include:
+- architecture overview
+- how to run locally
+- test users
+- key design decisions
+- trade-offs
+- AI assistant usage and prompts
+
+Keep it concise, clean, and appropriate for a take-home assignment.
