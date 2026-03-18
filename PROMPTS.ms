@@ -356,4 +356,55 @@ Then implement them.
 
   ------
 
-  
+  Now implement the frontend described in CLAUDE.md.
+
+- create the API modules for users and sessions
+- implement an auth page with Login and Register tabs
+- implement LoginForm
+- implement RegisterForm
+- implement SessionList
+- implement CreateSessionForm
+- implement the main App flow for authenticated vs unauthenticated state
+- send Basic Auth headers on every sessions request
+- on register success, switch back to login with a success message
+- on 401, clear credentials and return the user to the auth page
+- keep styling minimal and clean
+- use fetch directly, no axios
+
+Before coding, show me:
+1. the components you will create
+2. the state you plan to keep in App
+3. the API client shape
+
+Then implement it.
+
+
+⏺ Zero errors. Here's what was built:                                                                                                     
+                                                                                                                                        
+  ┌──────────────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────┐  
+  │               File               │                                              Role                                               │  
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ types/session.ts                 │ Session + CreateSessionPayload interfaces                                                       │  
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ api/users.ts                     │ registerUser — throws { status, message } on failure                                            │  
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ api/sessions.ts                  │ getSessions / createSession / deleteSession — all attach Basic Auth header; 204 returns         │  
+  │                                  │ undefined cleanly                                                                               │  
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ components/LoginForm.tsx         │ Controlled form; calls onLogin prop; shows inline error                                         │  
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ components/RegisterForm.tsx      │ Calls registerUser directly; 409 → "Username already taken"; calls onSuccess on 201             │  
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ components/AuthPage.tsx          │ Tab toggle; on register success → switches to Login tab with green "Account created" message    │
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ components/SessionList.tsx       │ Table with Exam / Scheduled At / Duration / Status / Delete columns                             │
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ components/CreateSessionForm.tsx │ Converts datetime-local value to ISO string before sending; resets on success                   │
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤  
+  │ App.tsx                          │ Owns credentials + sessions state; login = fetch sessions as credential validation; 401 on any  │
+  │                                  │ call → logout()                                                                                 │  
+  ├──────────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ App.css                          │ Full rewrite using existing CSS variables — no external dependencies                            │  
+  └──────────────────────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────┘ 
+
+  ------

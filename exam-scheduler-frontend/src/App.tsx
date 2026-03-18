@@ -1,121 +1,104 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+// AI-GENERATED
+import { useState, useEffect, useCallback } from 'react';
+import AuthPage from './components/AuthPage';
+import SessionList from './components/SessionList';
+import CreateSessionForm from './components/CreateSessionForm';
+import { getSessions, createSession, deleteSession } from './api/sessions';
+import type { Session, CreateSessionPayload } from './types/session';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+interface Credentials {
+  username: string;
+  password: string;
 }
 
-export default App
+function App() {
+  const [credentials, setCredentials] = useState<Credentials | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const logout = useCallback(() => {
+    setCredentials(null);
+    setSessions([]);
+    setError('');
+  }, []);
+
+  const fetchSessions = useCallback(async (creds: Credentials) => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getSessions(creds.username, creds.password);
+      setSessions(data);
+    } catch (err: any) {
+      if (err?.status === 401) {
+        logout();
+      } else {
+        setError('Failed to load sessions');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [logout]);
+
+  useEffect(() => {
+    if (credentials) fetchSessions(credentials);
+  }, [credentials, fetchSessions]);
+
+  async function handleLogin(username: string, password: string) {
+    // Validate credentials by attempting to fetch sessions
+    const data = await getSessions(username, password);
+    setCredentials({ username, password });
+    setSessions(data);
+  }
+
+  async function handleCreate(payload: CreateSessionPayload) {
+    if (!credentials) return;
+    const session = await createSession(credentials.username, credentials.password, payload);
+    setSessions(prev => [...prev, session].sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
+    ));
+  }
+
+  async function handleDelete(id: string) {
+    if (!credentials) return;
+    try {
+      await deleteSession(credentials.username, credentials.password, id);
+      setSessions(prev => prev.filter(s => s.id !== id));
+    } catch (err: any) {
+      if (err?.status === 401) {
+        logout();
+      } else {
+        setError('Failed to delete session');
+      }
+    }
+  }
+
+  if (!credentials) {
+    return <AuthPage onLogin={handleLogin} />;
+  }
+
+  return (
+    <div className="main-page">
+      <header className="main-header">
+        <h1>Exam Scheduler</h1>
+        <div className="header-right">
+          <span className="username">{credentials.username}</span>
+          <button className="btn-logout" onClick={logout}>Log out</button>
+        </div>
+      </header>
+
+      {error && <p className="error-msg">{error}</p>}
+
+      {loading ? (
+        <p className="loading-msg">Loading sessions…</p>
+      ) : (
+        <SessionList sessions={sessions} onDelete={handleDelete} />
+      )}
+
+      <CreateSessionForm onCreate={handleCreate} />
+    </div>
+  );
+}
+
+export default App;
