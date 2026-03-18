@@ -152,3 +152,84 @@ Scaffold is complete. Here's a summary of what was done:
 
 Before making changes, list the files you will edit and any packages required.
 Then proceed.
+
+Everything is in place:                                                                                                               
+                                                                                                                                          
+  - user.entity.ts — uuid PK, username (unique), passwordHash, UserRole enum column, timestamps, @OneToMany to Session                    
+  - session.entity.ts — uuid PK, userId FK, examName, scheduledAt (timestamptz), durationMinutes, SessionStatus enum column, timestamps,  
+  @ManyToOne back to User                                                                                                                 
+  - database.module.ts — TypeORM root config with env vars, synchronize: true, both entities registered                                   
+  - .env.example — all 5 env vars documented with defaults                                                                                
+                                                                                                                                          
+  All three packages (@nestjs/typeorm, typeorm, pg) were already present in package.json. No additional installs needed.   
+
+------
+
+Now implement the users flow described in CLAUDE.md.
+
+- implement RegisterUserDto and UserResponseDto
+- implement UsersRepository
+- implement UsersService
+- implement UsersController with POST /api/users/register
+- hash passwords with bcrypt
+- return 409 Conflict if username already exists
+- never expose passwordHash
+- keep this route public and not protected by BasicAuthGuard
+
+Before coding, briefly explain the flow from controller to repository.
+Then implement it.
+
+⏺ The DTOs were already complete from the scaffold, but let me verify them quickly:
+                                                                                          
+⏺ Read 2 files (ctrl+o to expand)    
+                                                                                                                                          
+⏺ Both DTOs are correct and complete. Users flow is fully implemented:
+                                                                                                                                          
+  ┌─────────────────────┬─────────────────────────────────────────────────────────────────────────────────────┐                         
+  │        File         │                                    What changed                                     │                           
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤                           
+  │ users.repository.ts │ findByUsername + create using TypeORM Repository<User>                              │                           
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤                           
+  │ users.service.ts    │ findByUsername delegate + register with duplicate check (409) and bcrypt.hash(10)   │                         
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤                           
+  │ users.controller.ts │ POST /api/users/register → maps User to UserResponseDto, never exposes passwordHash │                           
+  ├─────────────────────┼─────────────────────────────────────────────────────────────────────────────────────┤                           
+  │ DTOs                │ Already complete — no changes needed                                                │                           
+  └─────────────────────┴─────────────────────────────────────────────────────────────────────────────────────┘                         
+                                                                                                                                          
+  passwordHash is excluded by manually constructing the response object in the controller rather than serializing the entity directly.  
+
+  ---------
+
+  Now implement authentication according to CLAUDE.md.
+
+Please:
+- implement BasicAuthGuard
+- implement CurrentUser decorator
+- decode Authorization: Basic credentials
+- split username and password correctly
+- validate credentials using bcrypt.compare
+- attach the authenticated user to req.user
+- throw UnauthorizedException on failure
+- apply the guard in a clean and explicit way
+
+Before coding, tell me whether you recommend applying the guard globally or only on the sessions controller, and why.
+Then implement it according to the simpler take-home-friendly option.
+
+Done. Here's what's implemented:                                                                                                        
+                                                                                                                                          
+  BasicAuthGuard.canActivate:                                                                                                             
+  1. Checks Authorization header starts with Basic  — throws UnauthorizedException if missing                                             
+  2. Base64-decodes the credentials                                                                                                       
+  3. Splits on the first : only — handles passwords containing colons                                                                   
+  4. Looks up user via UsersService.findByUsername — throws if not found                                                                  
+  5. bcrypt.compare(password, user.passwordHash) — throws if mismatch                                                                     
+  6. Assigns req['user'] = user for @CurrentUser() to consume                                                                           
+                                                                                                                                          
+  Both "user not found" and "wrong password" return the same generic "Invalid credentials" message — intentional to avoid username        
+  enumeration.                                                                                                                            
+                                                                                                                                     
+--------
+
+
+                                                                                                                                     

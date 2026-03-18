@@ -1,16 +1,24 @@
 // AI-GENERATED
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { UsersRepository } from './users.repository';
+import { User } from './user.entity';
 
 @Injectable()
 export class UsersService {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  // TODO: implement findByUsername(username: string): Promise<User | null>
-  //   — delegates to usersRepository.findByUsername
+  findByUsername(username: string): Promise<User | null> {
+    return this.usersRepository.findByUsername(username);
+  }
 
-  // TODO: implement register(username: string, password: string): Promise<User>
-  //   — check for duplicate username (throw 409 ConflictException if taken)
-  //   — hash password with bcrypt (rounds: 10)
-  //   — delegates to usersRepository.create
+  async register(username: string, password: string): Promise<User> {
+    const existing = await this.usersRepository.findByUsername(username);
+    if (existing) {
+      throw new ConflictException('Username already taken');
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    return this.usersRepository.create(username, passwordHash);
+  }
 }

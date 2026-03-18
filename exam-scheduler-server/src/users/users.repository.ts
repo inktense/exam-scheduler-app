@@ -11,6 +11,12 @@ export class UsersRepository {
     private readonly repo: Repository<User>,
   ) {}
 
-  // TODO: implement findByUsername(username: string): Promise<User | null>
-  // TODO: implement create(username: string, passwordHash: string): Promise<User>
+  findByUsername(username: string): Promise<User | null> {
+    return this.repo.findOneBy({ username });
+  }
+
+  async create(username: string, passwordHash: string): Promise<User> {
+    const user = this.repo.create({ username, passwordHash });
+    return this.repo.save(user);
+  }
 }

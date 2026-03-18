@@ -17,17 +17,32 @@ export class BasicAuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<Request>();
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Basic ')) {
+    if (!authHeader?.startsWith('Basic ')) {
       throw new UnauthorizedException('Missing or invalid Authorization header');
     }
 
-    // TODO: implement credential extraction and bcrypt comparison
-    // 1. Decode base64: Buffer.from(base64Part, 'base64').toString('utf-8')
-    // 2. Split on first ':' only (passwords may contain colons)
-    // 3. usersService.findByUsername(username)
-    // 4. bcrypt.compare(password, user.passwordHash)
-    // 5. req['user'] = user
+    const base64 = authHeader.slice('Basic '.length);
+    const decoded = Buffer.from(base64, 'base64').toString('utf-8');
 
-    throw new UnauthorizedException('Not implemented yet');
+    // Split on first ':' only — passwords may contain colons
+    const colonIndex = decoded.indexOf(':');
+    if (colonIndex === -1) {
+      throw new UnauthorizedException('Malformed credentials');
+    }
+    const username = decoded.slice(0, colonIndex);
+    const password = decoded.slice(colonIndex + 1);
+
+    const user = await this.usersService.findByUsername(username);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    req['user'] = user;
+    return true;
   }
 }

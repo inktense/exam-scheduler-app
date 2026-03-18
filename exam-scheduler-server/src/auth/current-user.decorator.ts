@@ -5,7 +5,6 @@ import { User } from '../users/user.entity';
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): User => {
     const req = ctx.switchToHttp().getRequest();
-    // TODO: req.user is populated by BasicAuthGuard
     return req.user as User;
   },
 );
