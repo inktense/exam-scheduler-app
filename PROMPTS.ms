@@ -265,4 +265,95 @@ Then implement them.
               
 --------
 
-                                                                                                                                     
+Now implement the seed logic described in CLAUDE.md.
+
+- seed alice and bob on startup if they do not already exist
+- hash their passwords with bcrypt
+- keep the implementation simple and easy to explain
+- integrate the seed logic into application bootstrap in a clean way
+
+Before coding, explain where the seed should run and why.
+Then implement it.
+
+⏺ Done. The seed:                                                                                                                         
+                                                                                                                                          
+  - Reuses UsersService.findByUsername + UsersService.register — no direct DB calls, passwords are hashed through the same bcrypt path as 
+  real registrations                                                                                                                      
+  - Is idempotent — safe to restart the server without creating duplicates                                                                
+  - Logs clearly so you can see at startup whether users were created or skipped  
+
+------
+
+Now complete the backend bootstrap configuration.
+
+- enable global ValidationPipe with whitelist and transform
+- set the global API prefix to /api
+- enable CORS for http://localhost:5173
+- make sure the backend starts cleanly with the current architecture
+
+Also review the backend for any missing imports, DI wiring issues, or obvious problems and fix them.
+Summarize the changes after implementation.
+
+                                                                                                                                          
+⏺ Clean compile — zero TypeScript errors. Full wiring review summary:                                                                     
+                                                                                                                                        
+  ┌────────────────┬──────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────┐   
+  │      Area      │      Status      │                                             Notes                                             │   
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ main.ts        │ ✅ Already       │ setGlobalPrefix('api'), enableCors, ValidationPipe({ whitelist, transform }) all in place     │   
+  │                │ correct          │ from earlier                                                                                  │ 
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ AppModule      │ ✅               │ Imports all 4 modules; OnModuleInit calls seed with injected UsersService                     │   
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ DatabaseModule │ ✅ Fixed         │ parseInt(process.env.DB_PORT ?? '5432', 10) — was the only TS error                           │   
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ UsersModule    │ ✅               │ Provides UsersRepository + UsersService; exports UsersService for AuthModule + AppModule      │   
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ AuthModule     │ ✅               │ Imports UsersModule; provides + exports BasicAuthGuard                                        │ 
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ SessionsModule │ ✅               │ Imports AuthModule so BasicAuthGuard is resolvable for @UseGuards                             │ 
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ tsconfig.json  │ ✅               │ emitDecoratorMetadata + experimentalDecorators enabled                                        │ 
+  ├────────────────┼──────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────┤   
+  │ Packages       │ ✅               │ @nestjs/typeorm, typeorm, pg, bcrypt, @types/bcrypt all present                               │ 
+  └────────────────┴──────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────┘   
+                                                                                                                                        
+  No changes needed — the backend compiles cleanly and all DI wiring is correct. Ready to start against a running Postgres instance. 
+
+  -------
+
+Now add backend tests according to CLAUDE.md.
+
+- write Jest unit tests for SessionsService
+- mock the repository layer with jest.fn()
+- cover at least:
+  1. findAllByUser returns only that user’s sessions
+  2. create creates a session with the correct userId
+  3. remove throws NotFoundException when session does not exist
+  4. remove throws ForbiddenException when session belongs to another user
+  5. remove succeeds when session belongs to the authenticated user
+
+Before coding, show me the test cases and the repository methods you will mock.
+Then implement them.
+
+⏺ All 6 tests pass. Summary:                                                                                                              
+                                                                                                                                          
+  ┌─────────────────────────────────────────┬─────────────────────────────────────────────────────────────┐                             
+  │                  Test                   │                      What it verifies                       │                               
+  ├─────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤                             
+  │ findAllByUser — returns user's sessions │ repo called with correct userId, result returned as-is      │                               
+  ├─────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤                               
+  │ create — correct userId on result       │ repo.create called with expect.objectContaining({ userId }) │                               
+  ├─────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤                               
+  │ create — past date throws               │ synchronous BadRequestException caught with .toThrow()      │                               
+  ├─────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤                               
+  │ remove — not found                      │ repo.findOneById returns null → NotFoundException           │                               
+  ├─────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤                               
+  │ remove — wrong user                     │ session has different userId → ForbiddenException           │                             
+  ├─────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤                               
+  │ remove — success                        │ repo.remove called with the full session object             │                             
+  └─────────────────────────────────────────┴─────────────────────────────────────────────────────────────┘     
+
+  ------
+
+  

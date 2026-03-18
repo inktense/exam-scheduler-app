@@ -14,7 +14,6 @@ export class AppModule implements OnModuleInit {
   constructor(private readonly usersService: UsersService) {}
 
   async onModuleInit(): Promise<void> {
-    // TODO: seedDatabase will be a no-op until UsersService is implemented
     await seedDatabase(this.usersService);
   }
 }

@@ -7,12 +7,13 @@ const TEST_USERS = [
 ];
 
 export async function seedDatabase(usersService: UsersService): Promise<void> {
-  // TODO: implement seeding
-  //   — for each TEST_USERS entry:
-  //     1. check if user already exists via usersService.findByUsername
-  //     2. if not found, call usersService.register(username, password)
-  //     3. log a message for each seeded / skipped user
-  for (const _user of TEST_USERS) {
-    // placeholder — will be implemented
+  for (const { username, password } of TEST_USERS) {
+    const existing = await usersService.findByUsername(username);
+    if (existing) {
+      console.log(`[seed] skipping '${username}' — already exists`);
+      continue;
+    }
+    await usersService.register(username, password);
+    console.log(`[seed] created user '${username}'`);
   }
 }
