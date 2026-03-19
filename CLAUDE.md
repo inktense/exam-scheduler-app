@@ -58,6 +58,14 @@ src/
 │   └── dto/
 │       ├── register-user.dto.ts
 │       └── user-response.dto.ts
+├── exams/
+│   ├── exams.module.ts
+│   ├── exam.entity.ts
+│   ├── exams.repository.ts        # TypeORM-backed data access
+│   ├── exams.service.ts           # Business logic
+│   ├── exams.controller.ts        # GET /api/exams
+│   └── dto/
+│       └── exam-response.dto.ts
 ├── sessions/
 │   ├── sessions.module.ts
 │   ├── session.entity.ts
@@ -68,10 +76,40 @@ src/
 │       ├── create-session.dto.ts
 │       └── session-response.dto.ts
 └── seed/
-    └── seed.ts                    # Seeds test users on startup
+    └── seed.ts                    # Seeds test users and predefined exams on startup
 ```
 
 **Key design principle:** Controllers handle HTTP concerns only. Services contain all business logic. Repositories abstract all database access. No TypeORM calls outside of repository classes.
+
+---
+
+### Database Schema
+
+```
+users
+├── id              uuid PK
+├── username        string (unique)
+├── passwordHash    string
+├── role            enum (USER)
+├── createdAt       timestamptz
+└── updatedAt       timestamptz
+
+exams
+├── id              uuid PK
+├── name            string (unique)
+├── durationMinutes int
+├── numberOfQuestions int
+└── createdAt       timestamptz
+
+sessions
+├── id              uuid PK
+├── userId          uuid FK → users.id
+├── examId          uuid FK → exams.id
+├── scheduledAt     timestamptz
+├── status          enum (SCHEDULED | CANCELED)
+├── createdAt       timestamptz
+└── updatedAt       timestamptz
+```
 
 ---
 
@@ -110,6 +148,32 @@ export enum UserRole {
 }
 ```
 
+#### `exams` table
+
+```typescript
+// exam.entity.ts
+@Entity('exams')
+export class Exam {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  name: string;
+
+  @Column({ type: 'int' })
+  durationMinutes: number;
+
+  @Column({ type: 'int' })
+  numberOfQuestions: number;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @OneToMany(() => Session, (session) => session.exam)
+  sessions: Session[];
+}
+```
+
 #### `sessions` table
 
 ```typescript
@@ -127,13 +191,14 @@ export class Session {
   user: User;
 
   @Column()
-  examName: string;
+  examId: string;
+
+  @ManyToOne(() => Exam, (exam) => exam.sessions)
+  @JoinColumn({ name: 'examId' })
+  exam: Exam;
 
   @Column({ type: 'timestamptz' })
   scheduledAt: Date;
-
-  @Column({ type: 'int' })
-  durationMinutes: number;
 
   @Column({ type: 'enum', enum: SessionStatus, default: SessionStatus.SCHEDULED })
   status: SessionStatus;
@@ -150,6 +215,8 @@ export enum SessionStatus {
   CANCELED = 'CANCELED',
 }
 ```
+
+> **Note:** `durationMinutes` is no longer stored on the session row. It is derived at read time from the joined `exam` relation and included in the response DTO. This keeps exam metadata authoritative — if duration ever changes, it is updated in one place.
 
 ---
 
@@ -204,6 +271,13 @@ All session endpoints require `Authorization: Basic <base64>` header. The regist
 
 Add a `UsersController` with this single endpoint. The `BasicAuthGuard` must **not** be applied to this route — it must remain publicly accessible.
 
+#### `GET /api/exams`
+
+- Returns the full list of available predefined exams
+- Requires authentication
+- Response: array of exam objects `{ id, name, durationMinutes, numberOfQuestions, createdAt }`
+- Order by `name` ascending
+
 #### `GET /api/sessions`
 
 - Returns all sessions belonging to the authenticated user
@@ -217,15 +291,15 @@ Add a `UsersController` with this single endpoint. The `BasicAuthGuard` must **n
 - Body (JSON):
   ```json
   {
-    "examName": "AWS Solutions Architect Associate",
-    "scheduledAt": "2025-09-01T10:00:00.000Z",
-    "durationMinutes": 130
+    "examId": "uuid-of-exam",
+    "scheduledAt": "2025-09-01T10:00:00.000Z"
   }
   ```
 - Validation rules (use `class-validator`):
-  - `examName`: required, non-empty string
+  - `examId`: required, valid UUID
   - `scheduledAt`: required, valid ISO date string, must be in the future
-  - `durationMinutes`: required, positive integer (min: 1)
+- `durationMinutes` is **not** accepted from the client — it is derived from the selected exam server-side
+- Returns `404 Not Found` if `examId` does not match a known exam
 - Returns the created session object with `201 Created`
 
 #### `DELETE /api/sessions/:id`
@@ -245,26 +319,32 @@ Add a `UsersController` with this single endpoint. The `BasicAuthGuard` must **n
 ```typescript
 // create-session.dto.ts
 export class CreateSessionDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
-  examName: string;
+  examId: string;
 
   @IsDateString()
   @IsNotEmpty()
   scheduledAt: string; // validated as future date in service layer
-
-  @IsInt()
-  @Min(1)
-  durationMinutes: number;
 }
 
 // session-response.dto.ts
 export class SessionResponseDto {
   id: string;
-  examName: string;
+  examId: string;
+  examName: string;       // from joined exam relation
+  durationMinutes: number; // from joined exam relation
   scheduledAt: Date;
-  durationMinutes: number;
   status: SessionStatus;
+  createdAt: Date;
+}
+
+// exam-response.dto.ts
+export class ExamResponseDto {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  numberOfQuestions: number;
   createdAt: Date;
 }
 ```
@@ -304,7 +384,7 @@ TypeOrmModule.forRoot({
   username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'exam_scheduler',
-  entities: [User, Session],
+  entities: [User, Session, Exam],
   synchronize: true, // OK for dev/take-home; disable in production
 })
 ```
@@ -325,16 +405,23 @@ DB_NAME=exam_scheduler
 On application bootstrap, seed the database with at least two test users if they don't already exist:
 
 ```typescript
-// seed.ts — called from AppModule.onModuleInit() or a dedicated bootstrap hook
+// seed.ts — called from AppModule.onModuleInit()
 const testUsers = [
   { username: 'alice', password: 'password123' },
   { username: 'bob', password: 'password123' },
 ];
-// Hash passwords with bcrypt before inserting
-// Use findOneBy({ username }) to skip if already exists
+
+const predefinedExams = [
+  { name: 'CASI Level 1 – Snowboard Instructor Foundations', durationMinutes: 60, numberOfQuestions: 40 },
+  { name: 'CASI Level 2 – Snowboard Instructor Certification', durationMinutes: 90, numberOfQuestions: 55 },
+  // ...
+];
+
+// Hash passwords with bcrypt before inserting users
+// Use findOneBy({ username }) / findOneBy({ name }) to skip if already exists
 ```
 
-This allows immediate demo without any registration flow.
+This allows immediate demo without any registration flow. Both `UsersService` and `ExamsService` are injected into `AppModule` and passed to `seedDatabase()`.
 
 ---
 
@@ -383,15 +470,16 @@ src/
 ├── main.tsx
 ├── api/
 │   ├── sessions.ts       # Session CRUD calls, attaches Basic Auth header
+│   ├── exams.ts          # GET /api/exams call
 │   └── users.ts          # Registration call (POST /api/users/register)
 ├── components/
 │   ├── AuthPage.tsx       # Contains Login and Register tabs/toggle
 │   ├── LoginForm.tsx      # Username + password inputs
 │   ├── RegisterForm.tsx   # Username + password inputs for new account
 │   ├── SessionList.tsx    # Displays sessions, handles delete
-│   └── CreateSessionForm.tsx  # Form to create a session
+│   └── CreateSessionForm.tsx  # Exam dropdown + date/time pickers
 └── types/
-    └── session.ts         # TypeScript types matching backend response
+    └── session.ts         # TypeScript types: Session, Exam, CreateSessionPayload
 ```
 
 ### Auth approach
@@ -422,9 +510,10 @@ src/
   - Columns: Exam Name, Scheduled At, Duration, Status, Actions
   - Each row has a Delete button
 - A "Schedule New Exam" form below (or a collapsible section) with:
-  - Exam Name (text input)
-  - Scheduled At (datetime-local input)
-  - Duration in Minutes (number input)
+  - Exam (dropdown — fetched from `GET /api/exams` on mount)
+  - Duration (read-only, auto-filled from the selected exam)
+  - Date (date picker)
+  - Time (select with 15-minute intervals, 7 AM – 7 PM)
   - Submit button
 - Loading states: show a spinner or "Loading..." text while fetching
 - Error states: show error messages from the API inline (don't just silently fail)
@@ -454,19 +543,28 @@ export async function deleteSession(username: string, password: string, id: stri
 
 ```typescript
 // types/session.ts
+export interface Exam {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  numberOfQuestions: number;
+  createdAt: string;
+}
+
 export interface Session {
   id: string;
-  examName: string;
+  examId: string;
+  examName: string;       // derived from joined exam
+  durationMinutes: number; // derived from joined exam
   scheduledAt: string;
-  durationMinutes: number;
   status: 'SCHEDULED' | 'CANCELED';
   createdAt: string;
 }
 
 export interface CreateSessionPayload {
-  examName: string;
+  examId: string;
   scheduledAt: string;
-  durationMinutes: number;
+  // durationMinutes intentionally omitted — derived server-side
 }
 ```
 

@@ -567,4 +567,8 @@ Add more tests to improve the coverage and test the new added exam entity.
   package.json jest config:                                                                                                               
   - coverageReporters: ["text", "lcov", "html"] — terminal output + HTML report in coverage/                                              
   - coverageThreshold — enforces 80% lines/functions/statements globally                                                                  
-  - collectCoverageFrom exclusions for files that don't need unit tests (main.ts, modules, entities, DTOs, decorators, seed)  
+  - collectCoverageFrom exclusions for files that don't need unit tests (main.ts, modules, entities, DTOs, decorators, seed)
+
+  ----
+
+  Review last changes made. Update CLAUDE.md accordingly. Look specifically at the new exam feature. 
