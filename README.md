@@ -32,12 +32,22 @@ npm install
 npm run start:dev
 ```
 
-API available at `http://localhost:3000/api`. On first boot, two test users are seeded automatically:
+API available at `http://localhost:3000/api`. On first boot, two test users and five predefined exams are seeded automatically:
 
 | Username | Password      |
 |----------|---------------|
 | `alice`  | `password123` |
 | `bob`    | `password123` |
+
+Available exams (seeded on first boot):
+
+| Exam | Duration | Questions |
+|------|----------|-----------|
+| AWS Certified Cloud Practitioner | 90 min | 65 |
+| AWS Certified Solutions Architect – Associate | 130 min | 65 |
+| AWS Certified Developer – Associate | 130 min | 65 |
+| AWS Certified SysOps Administrator – Associate | 130 min | 65 |
+| AWS Certified Solutions Architect – Professional | 180 min | 75 |
 
 **3. Start the frontend**
 
@@ -72,6 +82,8 @@ Repository  →  only layer that touches the database (TypeORM)
 ```
 
 No TypeORM queries live outside repository classes. This makes the code easy to test (mock the repository, unit test the service) and easy to extend (swap the database layer without touching business logic).
+
+**Predefined exams model** — exams are managed server-side with fixed `durationMinutes` and `numberOfQuestions`. When a user books a session they select an `examId`; the backend derives the duration from the exam. Clients cannot override it. This keeps exam metadata authoritative and consistent across all sessions.
 
 ### Frontend
 

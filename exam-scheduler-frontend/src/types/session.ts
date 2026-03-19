@@ -1,6 +1,15 @@
 // AI-GENERATED
+export interface Exam {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  numberOfQuestions: number;
+  createdAt: string;
+}
+
 export interface Session {
   id: string;
+  examId: string;
   examName: string;
   scheduledAt: string;
   durationMinutes: number;
@@ -9,7 +18,6 @@ export interface Session {
 }
 
 export interface CreateSessionPayload {
-  examName: string;
+  examId: string;
   scheduledAt: string;
-  durationMinutes: number;
 }

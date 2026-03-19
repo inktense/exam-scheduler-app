@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../users/user.entity';
 import { Session } from '../sessions/session.entity';
+import { Exam } from '../exams/exam.entity';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { Session } from '../sessions/session.entity';
       username: process.env.DB_USER || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'exam_scheduler',
-      entities: [User, Session],
+      entities: [User, Session, Exam],
       synchronize: true, // OK for dev/take-home; disable in production
     }),
   ],

@@ -7,9 +7,10 @@ import { SessionsService } from './sessions.service';
 import { SessionsController } from './sessions.controller';
 import { AuthModule } from '../auth/auth.module';
 import { UsersModule } from '../users/users.module';
+import { ExamsModule } from '../exams/exams.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Session]), AuthModule, UsersModule],
+  imports: [TypeOrmModule.forFeature([Session]), AuthModule, UsersModule, ExamsModule],
   providers: [SessionsRepository, SessionsService],
   controllers: [SessionsController],
 })

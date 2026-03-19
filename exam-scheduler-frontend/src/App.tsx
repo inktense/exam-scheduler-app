@@ -96,7 +96,11 @@ function App() {
         <SessionList sessions={sessions} onDelete={handleDelete} />
       )}
 
-      <CreateSessionForm onCreate={handleCreate} />
+      <CreateSessionForm
+        username={credentials.username}
+        password={credentials.password}
+        onCreate={handleCreate}
+      />
     </div>
   );
 }

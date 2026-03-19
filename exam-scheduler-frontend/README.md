@@ -42,6 +42,8 @@ Use the seeded accounts to log in without registering:
 
 **Flat component structure** — no global state library. Session data lives in `App.tsx` and is passed as props. This keeps data flow explicit and easy to trace.
 
+**Exam selection flow** — on the scheduling form, available exams are fetched from `GET /api/exams` on mount. Selecting an exam auto-fills the duration field (read-only). The form submits only `examId` and `scheduledAt` — duration is derived server-side from the exam, not sent by the client.
+
 ## Build
 
 ```bash

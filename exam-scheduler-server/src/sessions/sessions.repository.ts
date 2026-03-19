@@ -14,6 +14,7 @@ export class SessionsRepository {
   findAllByUserId(userId: string): Promise<Session[]> {
     return this.repo.find({
       where: { userId },
+      relations: ['exam'],
       order: { scheduledAt: 'ASC' },
     });
   }

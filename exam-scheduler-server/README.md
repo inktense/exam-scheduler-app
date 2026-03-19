@@ -38,12 +38,20 @@ npm run start:dev
 
 API is available at `http://localhost:3000/api`.
 
-On first boot the database is seeded with two test users:
+On first boot the database is seeded with two test users and five predefined exams:
 
 | Username | Password      |
 |----------|---------------|
 | `alice`  | `password123` |
 | `bob`    | `password123` |
+
+| Exam | Duration | Questions |
+|------|----------|-----------|
+| AWS Certified Cloud Practitioner | 90 min | 65 |
+| AWS Certified Solutions Architect – Associate | 130 min | 65 |
+| AWS Certified Developer – Associate | 130 min | 65 |
+| AWS Certified SysOps Administrator – Associate | 130 min | 65 |
+| AWS Certified Solutions Architect – Professional | 180 min | 75 |
 
 ## Architecture & Key Decisions
 
@@ -55,7 +63,9 @@ On first boot the database is seeded with two test users:
 
 **`synchronize: true`** — TypeORM auto-syncs the schema on boot. Acceptable for a take-home; in production this would be replaced with explicit migrations.
 
-**Seeded users** — alice and bob are created on first boot so the app can be demoed immediately without going through the registration flow.
+**Predefined exams model** — exams are defined server-side (name, duration, number of questions) and seeded on first boot. Session creation takes an `examId`; `durationMinutes` is derived from the exam and cannot be overridden by the client. This keeps exam data authoritative and consistent.
+
+**Seeded users and exams** — alice, bob, and all five AWS exams are created on first boot so the app can be demoed immediately.
 
 ## Tests
 

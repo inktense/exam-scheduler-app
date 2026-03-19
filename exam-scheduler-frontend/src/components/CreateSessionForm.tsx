@@ -1,8 +1,11 @@
 // AI-GENERATED
-import { useState } from 'react';
-import type { CreateSessionPayload } from '../types/session';
+import { useState, useEffect } from 'react';
+import type { Exam, CreateSessionPayload } from '../types/session';
+import { getExams } from '../api/exams';
 
 interface Props {
+  username: string;
+  password: string;
   onCreate: (payload: CreateSessionPayload) => Promise<void>;
 }
 
@@ -12,19 +15,25 @@ for (let h = 7; h <= 19; h++) {
     if (h === 19 && m > 0) break;
     const hh = String(h).padStart(2, '0');
     const mm = String(m).padStart(2, '0');
-    const suffix = h < 12 ? 'AM' : h === 12 ? 'PM' : 'PM';
+    const suffix = h < 12 ? 'AM' : 'PM';
     const displayH = h <= 12 ? h : h - 12;
     TIME_OPTIONS.push({ label: `${displayH}:${mm} ${suffix}`, value: `${hh}:${mm}` });
   }
 }
 
-export default function CreateSessionForm({ onCreate }: Props) {
-  const [examName, setExamName] = useState('');
+export default function CreateSessionForm({ username, password, onCreate }: Props) {
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [examId, setExamId] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
-  const [durationMinutes, setDurationMinutes] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    getExams(username, password).then(setExams).catch(() => setError('Failed to load exams'));
+  }, [username, password]);
+
+  const selectedExam = exams.find(e => e.id === examId);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,14 +41,12 @@ export default function CreateSessionForm({ onCreate }: Props) {
     setLoading(true);
     try {
       await onCreate({
-        examName,
+        examId,
         scheduledAt: new Date(`${scheduledDate}T${scheduledTime}`).toISOString(),
-        durationMinutes: Number(durationMinutes),
       });
-      setExamName('');
+      setExamId('');
       setScheduledDate('');
       setScheduledTime('');
-      setDurationMinutes('');
     } catch (err: any) {
       setError(err?.message ?? 'Failed to create session');
     } finally {
@@ -52,12 +59,21 @@ export default function CreateSessionForm({ onCreate }: Props) {
       <h2>Schedule New Exam</h2>
       {error && <p className="error-msg">{error}</p>}
       <label>
-        Exam Name
+        Exam
+        <select value={examId} onChange={e => setExamId(e.target.value)} required>
+          <option value="">Select an exam</option>
+          {exams.map(exam => (
+            <option key={exam.id} value={exam.id}>{exam.name}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Duration (minutes)
         <input
-          type="text"
-          value={examName}
-          onChange={e => setExamName(e.target.value)}
-          required
+          type="number"
+          value={selectedExam?.durationMinutes ?? ''}
+          readOnly
+          disabled
         />
       </label>
       <label>
@@ -71,26 +87,12 @@ export default function CreateSessionForm({ onCreate }: Props) {
       </label>
       <label>
         Time
-        <select
-          value={scheduledTime}
-          onChange={e => setScheduledTime(e.target.value)}
-          required
-        >
+        <select value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} required>
           <option value="">Select a time</option>
           {TIME_OPTIONS.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-      </label>
-      <label>
-        Duration (minutes)
-        <input
-          type="number"
-          value={durationMinutes}
-          onChange={e => setDurationMinutes(e.target.value)}
-          required
-          min={1}
-        />
       </label>
       <button type="submit" disabled={loading}>
         {loading ? 'Scheduling…' : 'Schedule Exam'}

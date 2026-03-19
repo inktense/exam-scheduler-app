@@ -1,16 +1,12 @@
 // AI-GENERATED
-import { IsDateString, IsInt, IsNotEmpty, IsString, Min } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsUUID } from 'class-validator';
 
 export class CreateSessionDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
-  examName: string;
+  examId: string;
 
   @IsDateString()
   @IsNotEmpty()
   scheduledAt: string; // validated as future date in service layer
-
-  @IsInt()
-  @Min(1)
-  durationMinutes: number;
 }

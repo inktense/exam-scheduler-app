@@ -491,3 +491,63 @@ Style:
 - Bullet points where appropriate
 - Keep it readable in ~2–4 minutes
 - Avoid unnecessary verbosity
+
+------
+
+Read CLAUDE.md and use it as the source of truth.
+
+Extend the current implementation to introduce a predefined exams model, similar to AWS certification exams.
+
+Requirements:
+
+Backend:
+- Add a new Exam entity and table:
+  - id (uuid)
+  - name (string)
+  - durationMinutes (int)
+  - numberOfQuestions (int)
+  - createdAt
+- Create exams.module.ts, exams.repository.ts, exams.service.ts
+- Seed a few predefined exams (e.g. AWS Solutions Architect, Developer Associate, etc.)
+
+- Update Session entity:
+  - replace examName with examId (foreign key)
+  - add relation to Exam entity
+  - remove manual examName input from session creation
+
+- Update session creation logic:
+  - user selects examId
+  - durationMinutes is automatically taken from the selected exam
+  - user cannot override duration
+
+- Add endpoint:
+  - GET /api/exams → returns list of available exams
+
+Frontend:
+- Replace “Exam Name” input with a dropdown/select
+- Fetch exams from GET /api/exams
+- On selection:
+  - display exam name
+  - auto-fill duration (read-only)
+- Remove manual duration editing (or make it read-only)
+
+Documentation (required):
+- Update CLAUDE.md:
+  - add the new Exam entity
+  - update Session entity
+  - document new endpoint and flow changes
+  - include rationale and trade-offs
+
+- Update README files (main, backend, frontend as relevant):
+  - reflect new exams model
+  - update API usage and data flow
+  - mention predefined exams and auto-derived duration
+
+Before making changes:
+1. Show updated database schema (Exam + updated Session)
+2. List all files to create/modify
+3. Explain how session creation flow changes
+
+Then implement incrementally.
+Keep the solution simple and aligned with the take-home scope.
+Add // AI-GENERATED where appropriate.

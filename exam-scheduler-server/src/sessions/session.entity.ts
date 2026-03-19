@@ -9,6 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from '../users/user.entity';
+import { Exam } from '../exams/exam.entity';
 
 export enum SessionStatus {
   SCHEDULED = 'SCHEDULED',
@@ -28,13 +29,14 @@ export class Session {
   user: User;
 
   @Column()
-  examName: string;
+  examId: string;
+
+  @ManyToOne(() => Exam, (exam) => exam.sessions)
+  @JoinColumn({ name: 'examId' })
+  exam: Exam;
 
   @Column({ type: 'timestamptz' })
   scheduledAt: Date;
-
-  @Column({ type: 'int' })
-  durationMinutes: number;
 
   @Column({ type: 'enum', enum: SessionStatus, default: SessionStatus.SCHEDULED })
   status: SessionStatus;

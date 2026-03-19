@@ -6,28 +6,40 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SessionsRepository } from './sessions.repository';
+import { ExamsService } from '../exams/exams.service';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { SessionResponseDto } from './dto/session-response.dto';
 import { Session } from './session.entity';
 
 @Injectable()
 export class SessionsService {
-  constructor(private readonly sessionsRepository: SessionsRepository) {}
+  constructor(
+    private readonly sessionsRepository: SessionsRepository,
+    private readonly examsService: ExamsService,
+  ) {}
 
-  findAllByUser(userId: string): Promise<Session[]> {
-    return this.sessionsRepository.findAllByUserId(userId);
+  async findAllByUser(userId: string): Promise<SessionResponseDto[]> {
+    const sessions = await this.sessionsRepository.findAllByUserId(userId);
+    return sessions.map(this.toDto);
   }
 
-  create(userId: string, dto: CreateSessionDto): Promise<Session> {
+  async create(userId: string, dto: CreateSessionDto): Promise<SessionResponseDto> {
     if (new Date(dto.scheduledAt) <= new Date()) {
       throw new BadRequestException('scheduledAt must be in the future');
     }
 
-    return this.sessionsRepository.create({
+    const exam = await this.examsService.findOneById(dto.examId);
+    if (!exam) {
+      throw new NotFoundException('Exam not found');
+    }
+
+    const session = await this.sessionsRepository.create({
       userId,
-      examName: dto.examName,
+      examId: dto.examId,
       scheduledAt: new Date(dto.scheduledAt),
-      durationMinutes: dto.durationMinutes,
     });
+
+    return this.toDto({ ...session, exam });
   }
 
   async remove(id: string, userId: string): Promise<void> {
@@ -42,5 +54,17 @@ export class SessionsService {
     }
 
     await this.sessionsRepository.remove(session);
+  }
+
+  private toDto(session: Session): SessionResponseDto {
+    return {
+      id: session.id,
+      examId: session.examId,
+      examName: session.exam.name,
+      durationMinutes: session.exam.durationMinutes,
+      scheduledAt: session.scheduledAt,
+      status: session.status,
+      createdAt: session.createdAt,
+    };
   }
 }
