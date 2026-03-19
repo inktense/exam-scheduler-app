@@ -2,6 +2,8 @@
 
 A full-stack exam scheduling app inspired by the Amazon certification exam booking flow. Users can register, log in, and manage their own exam sessions — schedule new ones or cancel existing ones.
 
+<video src="assets/demo.mov" controls width="100%"></video>
+
 ---
 
 ## Tech Stack
