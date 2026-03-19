@@ -445,3 +445,14 @@ Refactor the frontend styling and form behaviour with these specific changes:
 
 - Center the create form 
 — change the Scheduled At input so the user can pick date and time in separate fields. Right now a user can only select the date and manually write the time. Make the time field a picker with 15 min intervals between the options. Only have options from 7 AM until 7 PM 
+
+-----
+
+Generate two separate README files:
+1. exam-schedulers-server/README.md
+2. exam-schedulers-frontend/README.md
+
+- Keep both READMEs short, clear, and specific to each app
+- Do not repeat the full project description
+- Focus only on what is needed to understand and run each part
+- Add a few details about the architectural decisions made

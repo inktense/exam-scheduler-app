@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# exam-scheduler-frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for the exam scheduling app.
 
-Currently, two official plugins are available:
+## Requirements
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node.js 18+
+- The backend server running at `http://localhost:3000`
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Run
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+npm run dev
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+App is available at `http://localhost:5173`.
+
+## Auth
+
+The app uses HTTP Basic Auth. Credentials are held in React state for the session and never persisted to localStorage or cookies. Every API request attaches an `Authorization: Basic <base64>` header.
+
+Use the seeded accounts to log in without registering:
+
+| Username | Password      |
+|----------|---------------|
+| `alice`  | `password123` |
+| `bob`    | `password123` |
+
+## Architecture & Key Decisions
+
+**No token storage** — credentials (username + password) are held in React state at the `App` level only. They are never written to localStorage, sessionStorage, or cookies. Clearing state (logout or page refresh) immediately revokes access.
+
+**Credential propagation** — `App.tsx` owns the credentials and passes them down to API call sites. Every `fetch` constructs the `Authorization: Basic <base64>` header inline. On any `401` response, credentials are cleared and the user is returned to the auth page.
+
+**No external HTTP library** — all API calls use the native `fetch` API. The app is small enough that axios or react-query would add overhead without meaningful benefit.
+
+**Flat component structure** — no global state library. Session data lives in `App.tsx` and is passed as props. This keeps data flow explicit and easy to trace.
+
+## Build
+
+```bash
+npm run build
 ```
