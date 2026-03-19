@@ -130,3 +130,11 @@ All prompts used during development were tracked in `PROMPTS.md`. Some of the pr
 - Role-based access (admin view of all sessions, not just own)
 - TypeORM migrations instead of `synchronize`
 - CI pipeline running tests and type-checks on every PR
+
+- **Caching layer** — exam list and availability slots are read-heavy and rarely change; a Redis cache in front of those endpoints would cut database load significantly
+- **Rate limiting** — protect public endpoints (registration, login attempts) from brute-force with a rate limiter like `@nestjs/throttler`
+- **Pagination** — `GET /sessions` returns all sessions for a user; as history grows this needs cursor or offset pagination
+- **Database connection pooling** — fine-tuning TypeORM pool size for concurrent load, or moving to PgBouncer in front of Postgres
+- **Frontend styling refactor** — the current UI uses plain CSS with custom properties. Migrating to Tailwind CSS would improve consistency, reduce stylesheet maintenance, and make responsive design easier to manage as the UI grows
+- **Admin role for exam management** — currently exams are seeded at boot. A natural next step is an `ADMIN` role with protected endpoints to create, update, and deactivate exams dynamically. This would also unlock per-exam configuration like scheduling windows and availability dates
+- **Availability and capacity** — exams in a real system have limited seats per time slot. This would require modelling exam sessions as bookable slots with a `maxParticipants` field, tracking current enrollment, and rejecting bookings when a slot is full
