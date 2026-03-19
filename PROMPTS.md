@@ -456,3 +456,38 @@ Generate two separate README files:
 - Do not repeat the full project description
 - Focus only on what is needed to understand and run each part
 - Add a few details about the architectural decisions made
+
+------
+
+Read CLAUDE.md and use it as the source of truth.
+
+Generate the main README.md for the project.
+
+Requirements:
+- Keep it concise, human-readable, and well-structured
+- This is a take-home project, so tone should be professional but natural (not overly formal or robotic)
+
+Include:
+1. Project overview (mention inspiration from the Amazon exam scheduler model)
+2. Tech stack with brief reasoning for each choice
+3. How to run the project (backend, frontend, database via docker-compose)
+4. Authentication approach (Basic Auth, why it was chosen)
+5. Architecture overview:
+   - Backend layered design (controller → service → repository)
+   - Designed for extensibility (easy to add features, swap database)
+6. AI usage:
+   - Claude Code used for implementation
+   - CLAUDE.md was generated with Claude based on a personal reusable template and adapted for this project
+   - Mention prompts were tracked
+7. Tooling:
+   - Mention the TypeScript hook and what it validates
+   - Brief note on how it could be extended in the future
+8. Trade-offs and future improvements:
+   - Simplicity over production-grade features
+   - Possible extensions (auth, scheduling rules, etc.)
+
+Style:
+- Clear headings
+- Bullet points where appropriate
+- Keep it readable in ~2–4 minutes
+- Avoid unnecessary verbosity
