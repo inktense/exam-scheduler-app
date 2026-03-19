@@ -3,23 +3,36 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { SessionsService } from './sessions.service';
 import { SessionsRepository } from './sessions.repository';
 import { Session, SessionStatus } from './session.entity';
+import { ExamsService } from '../exams/exams.service';
+import { Exam } from '../exams/exam.entity';
+
+const makeExam = (overrides: Partial<Exam> = {}): Exam => ({
+  id: 'exam-1',
+  name: 'CASI Level 1 – Snowboard Instructor Foundations',
+  durationMinutes: 60,
+  numberOfQuestions: 40,
+  createdAt: new Date(),
+  sessions: [],
+  ...overrides,
+});
 
 const makeSession = (overrides: Partial<Session> = {}): Session => ({
   id: 'session-1',
   userId: 'user-1',
-  examName: 'AWS Solutions Architect',
+  examId: 'exam-1',
+  exam: makeExam(),
   scheduledAt: new Date('2099-01-01T10:00:00Z'),
-  durationMinutes: 130,
   status: SessionStatus.SCHEDULED,
   createdAt: new Date(),
   updatedAt: new Date(),
-  user: null,
+  user: null as unknown as import('../users/user.entity').User,
   ...overrides,
 });
 
 describe('SessionsService', () => {
   let service: SessionsService;
   let repo: jest.Mocked<SessionsRepository>;
+  let examsService: jest.Mocked<ExamsService>;
 
   beforeEach(() => {
     repo = {
@@ -27,9 +40,16 @@ describe('SessionsService', () => {
       findOneById: jest.fn(),
       create: jest.fn(),
       remove: jest.fn(),
-    } as jest.Mocked<SessionsRepository>;
+    } as unknown as jest.Mocked<SessionsRepository>;
 
-    service = new SessionsService(repo);
+    examsService = {
+      findAll: jest.fn(),
+      findOneById: jest.fn(),
+      findOneByName: jest.fn(),
+      create: jest.fn(),
+    } as unknown as jest.Mocked<ExamsService>;
+
+    service = new SessionsService(repo, examsService);
   });
 
   describe('findAllByUser', () => {
@@ -40,36 +60,41 @@ describe('SessionsService', () => {
       const result = await service.findAllByUser('user-1');
 
       expect(repo.findAllByUserId).toHaveBeenCalledWith('user-1');
-      expect(result).toEqual(sessions);
+      expect(result).toHaveLength(2);
+      expect(result[0].examName).toBe(sessions[0].exam.name);
+      expect(result[0].durationMinutes).toBe(sessions[0].exam.durationMinutes);
     });
   });
 
   describe('create', () => {
-    it('creates a session with the correct userId', async () => {
-      const dto = {
-        examName: 'AWS Solutions Architect',
-        scheduledAt: '2099-06-01T10:00:00Z',
-        durationMinutes: 130,
-      };
-      const created = makeSession({ userId: 'user-1' });
+    it('creates a session with the correct userId and examId', async () => {
+      const dto = { examId: 'exam-1', scheduledAt: '2099-06-01T10:00:00Z' };
+      const exam = makeExam();
+      const created = makeSession({ userId: 'user-1', examId: 'exam-1' });
+
+      examsService.findOneById.mockResolvedValue(exam);
       repo.create.mockResolvedValue(created);
 
       const result = await service.create('user-1', dto);
 
+      expect(examsService.findOneById).toHaveBeenCalledWith('exam-1');
       expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 'user-1', examName: dto.examName }),
+        expect.objectContaining({ userId: 'user-1', examId: 'exam-1' }),
       );
-      expect(result.userId).toBe('user-1');
+      expect(result.examId).toBe('exam-1');
     });
 
-    it('throws BadRequestException when scheduledAt is in the past', () => {
-      const dto = {
-        examName: 'AWS Solutions Architect',
-        scheduledAt: '2000-01-01T10:00:00Z',
-        durationMinutes: 130,
-      };
+    it('throws BadRequestException when scheduledAt is in the past', async () => {
+      const dto = { examId: 'exam-1', scheduledAt: '2000-01-01T10:00:00Z' };
 
-      expect(() => service.create('user-1', dto)).toThrow(BadRequestException);
+      await expect(service.create('user-1', dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFoundException when examId does not exist', async () => {
+      const dto = { examId: 'nonexistent', scheduledAt: '2099-06-01T10:00:00Z' };
+      examsService.findOneById.mockResolvedValue(null);
+
+      await expect(service.create('user-1', dto)).rejects.toThrow(NotFoundException);
     });
   });
 

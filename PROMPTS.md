@@ -551,3 +551,20 @@ Before making changes:
 Then implement incrementally.
 Keep the solution simple and aligned with the take-home scope.
 Add // AI-GENERATED where appropriate.
+
+----
+
+Add more tests to improve the coverage and test the new added exam entity. 
+
+  sessions.service.spec.ts — updated to match the new service:                                                                            
+  - makeSession now includes examId + exam relation (no examName/durationMinutes)                                                         
+  - ExamsService mock added as second constructor argument                                                                                
+  - New test: throws NotFoundException when examId doesn't exist                                                                          
+  - findAllByUser now asserts on the mapped DTO fields (examName, durationMinutes)                                                        
+                                                                                                                                          
+  exams.service.spec.ts — new spec covering all four service methods (findAll, findOneById, findOneByName, create)                        
+                                                                                                                                          
+  package.json jest config:                                                                                                               
+  - coverageReporters: ["text", "lcov", "html"] — terminal output + HTML report in coverage/                                              
+  - coverageThreshold — enforces 80% lines/functions/statements globally                                                                  
+  - collectCoverageFrom exclusions for files that don't need unit tests (main.ts, modules, entities, DTOs, decorators, seed)  
