@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "str_replace_based_edit|write_file|multiedit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $PWD/hooks/typecheck.js"
+          }
+        ]
+      }
+    ]
+  }
+}
