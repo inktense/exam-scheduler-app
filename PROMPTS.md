@@ -1,3 +1,5 @@
+## Key Prompts used with Claude Code for implementation based on the CLAUDE.md Specification
+
 Read CLAUDE.md in this repository and use it as the source of truth.
 
 Inspect the current backend and frontend boilerplates and give me:
@@ -426,3 +428,20 @@ The README should include:
 - AI assistant usage and prompts
 
 Keep it concise, clean, and appropriate for a take-home assignment.
+
+
+
+---
+## Refactoring & code improvement prompts
+
+Test postRun hook is triggered
+
+in @src/seed/seed.ts file replace const existing = await usersService.findByUsername(username); with const existing = await             
+  usersService.findByUserName(username); Make only this change  
+
+  ----
+
+Refactor the frontend styling and form behaviour with these specific changes:
+
+- Center the create form 
+— change the Scheduled At input so the user can pick date and time in separate fields. Right now a user can only select the date and manually write the time. Make the time field a picker with 15 min intervals between the options. Only have options from 7 AM until 7 PM 

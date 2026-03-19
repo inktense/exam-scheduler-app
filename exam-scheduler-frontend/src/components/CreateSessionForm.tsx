@@ -6,9 +6,22 @@ interface Props {
   onCreate: (payload: CreateSessionPayload) => Promise<void>;
 }
 
+const TIME_OPTIONS: { label: string; value: string }[] = [];
+for (let h = 7; h <= 19; h++) {
+  for (const m of [0, 15, 30, 45]) {
+    if (h === 19 && m > 0) break;
+    const hh = String(h).padStart(2, '0');
+    const mm = String(m).padStart(2, '0');
+    const suffix = h < 12 ? 'AM' : h === 12 ? 'PM' : 'PM';
+    const displayH = h <= 12 ? h : h - 12;
+    TIME_OPTIONS.push({ label: `${displayH}:${mm} ${suffix}`, value: `${hh}:${mm}` });
+  }
+}
+
 export default function CreateSessionForm({ onCreate }: Props) {
   const [examName, setExamName] = useState('');
-  const [scheduledAt, setScheduledAt] = useState('');
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [durationMinutes, setDurationMinutes] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,11 +33,12 @@ export default function CreateSessionForm({ onCreate }: Props) {
     try {
       await onCreate({
         examName,
-        scheduledAt: new Date(scheduledAt).toISOString(),
+        scheduledAt: new Date(`${scheduledDate}T${scheduledTime}`).toISOString(),
         durationMinutes: Number(durationMinutes),
       });
       setExamName('');
-      setScheduledAt('');
+      setScheduledDate('');
+      setScheduledTime('');
       setDurationMinutes('');
     } catch (err: any) {
       setError(err?.message ?? 'Failed to create session');
@@ -47,13 +61,26 @@ export default function CreateSessionForm({ onCreate }: Props) {
         />
       </label>
       <label>
-        Scheduled At
+        Date
         <input
-          type="datetime-local"
-          value={scheduledAt}
-          onChange={e => setScheduledAt(e.target.value)}
+          type="date"
+          value={scheduledDate}
+          onChange={e => setScheduledDate(e.target.value)}
           required
         />
+      </label>
+      <label>
+        Time
+        <select
+          value={scheduledTime}
+          onChange={e => setScheduledTime(e.target.value)}
+          required
+        >
+          <option value="">Select a time</option>
+          {TIME_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </label>
       <label>
         Duration (minutes)
